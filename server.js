@@ -16,22 +16,19 @@ mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log("MongoDB Connected Successfully!"))
     .catch((error) => console.log("Database connection failed!", error));
 
-// ইমেইলের পিয়ন সেটআপ (The Ultimate Connection Fix)
+// ইমেইলের পিয়ন সেটআপ (The Extreme Render IPv4 Fix)
 const transporter = nodemailer.createTransport({
-    service: 'gmail', 
     host: 'smtp.gmail.com',
-    port: 587, 
-    secure: false, 
+    port: 587,
+    secure: false, // ৫87 এ সব সময় false হয়
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.replace(/\s+/g, '') : ''
     },
     tls: {
-        rejectUnauthorized: false
-    },
-    connectionTimeout: 10000, 
-    greetingTimeout: 10000,
-    socketTimeout: 10000
+        // ফায়ারওয়াল বা SSL ভ্যালিডেশন বন্ধ করতে হবে
+        rejectUnauthorized: false 
+    }
 });
 
 // ১. ফর্ম রিসিভ এবং ইমেইল পাঠানোর রাস্তা
