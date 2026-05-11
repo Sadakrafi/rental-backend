@@ -16,14 +16,17 @@ mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log("MongoDB Connected Successfully!"))
     .catch((error) => console.log("Database connection failed!", error));
 
-// ইমেইলের পিয়ন সেটআপ (বাগ ফিক্সড)
+// ইমেইলের পিয়ন সেটআপ (The Ultimate Fix)
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
-    secure: true, // গুগলের একদম মেইন সিকিউর দরজা
+    secure: true,
     auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+        pass: process.env.EMAIL_PASS.replace(/\s+/g, '') // ম্যাজিক: আপনার পাসওয়ার্ডের মাঝখানের সব স্পেস মুছে জোড়া লাগিয়ে দেবে
+    },
+    tls: {
+        rejectUnauthorized: false // ফায়ারওয়াল ব্লক করা থেকে বাঁচাবে
     }
 });
 
