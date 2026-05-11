@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
-const nodemailer = require('nodemailer'); // ইমেইল সিস্টেম
+const nodemailer = require('nodemailer'); 
 require('dotenv').config();
 
 const Applicant = require('./models/Applicant');
@@ -18,10 +18,10 @@ mongoose.connect(process.env.MONGO_URI)
 
 // ইমেইলের পিয়ন সেটআপ (The Ultimate Connection Fix)
 const transporter = nodemailer.createTransport({
-    service: 'gmail', // সরাসরি গুগল সার্ভিস ব্যবহার করবে
+    service: 'gmail', 
     host: 'smtp.gmail.com',
-    port: 587, // 465 কাজ না করলে 587 সবসময় কাজ করে (Secure TLS)
-    secure: false, // 587 এর জন্য এটা false রাখতে হয়
+    port: 587, 
+    secure: false, 
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.replace(/\s+/g, '') : ''
@@ -29,7 +29,7 @@ const transporter = nodemailer.createTransport({
     tls: {
         rejectUnauthorized: false
     },
-    connectionTimeout: 10000, // ম্যাজিক: গুগল দরজা খুলতে দেরি করলে সার্ভার যেন রাগ করে ফিরে না আসে, তার জন্য ১০ সেকেন্ড সময় দিয়েছি!
+    connectionTimeout: 10000, 
     greetingTimeout: 10000,
     socketTimeout: 10000
 });
@@ -67,18 +67,14 @@ app.post('/api/apply', async (req, res) => {
             }
         });
 
-        // ইমেইল যাক বা না যাক, আমরা ক্লায়েন্টকে ২ সেকেন্ডে 'Success' বলে দেবো!
         res.status(201).json({ message: "Success!" });
     } catch (error) { 
-        console.log(error);
+        console.log("Error saving data:", error);
         res.status(500).json({ message: "Server Error!" }); 
     }
 });
 
-        res.status(201).json({ message: "Success!" });
-    } catch (error) { res.status(500).json({ message: "Server Error!" }); }
-});
-
+// ২. ড্যাশবোর্ডে ডাটা পাঠানোর রাস্তা
 app.get('/api/applicants', async (req, res) => {
     try {
         const applicants = await Applicant.find().sort({ applyDate: -1 });
@@ -86,6 +82,7 @@ app.get('/api/applicants', async (req, res) => {
     } catch (error) { res.status(500).json({ message: "Server Error!" }); }
 });
 
+// ৩. সব ডাটা ডিলিট করার স্পেশাল রাস্তা
 app.delete('/api/applicants/clear/all', async (req, res) => {
     try {
         await Applicant.deleteMany({});
@@ -93,6 +90,7 @@ app.delete('/api/applicants/clear/all', async (req, res) => {
     } catch (error) { res.status(500).json({ message: "Server Error!" }); }
 });
 
+// ৪. নির্দিষ্ট ডাটা ডিলিট করার রাস্তা
 app.delete('/api/applicants/:id', async (req, res) => {
     try {
         await Applicant.deleteOne({ _id: req.params.id });
@@ -100,21 +98,26 @@ app.delete('/api/applicants/:id', async (req, res) => {
     } catch (error) { res.status(500).json({ message: "Server Error!" }); }
 });
 
+// ৫. সেটিংস আনার রাস্তা
 app.get('/api/settings', async (req, res) => {
     try {
         let settings = await Settings.findOne();
-        if (!settings) settings = await Settings.create({});
+        if (!settings) { settings = await Settings.create({}); }
         res.status(200).json(settings);
     } catch (error) { res.status(500).json({ message: "Server Error!" }); }
 });
 
+// ৬. সেটিংস সেভ বা আপডেট করার রাস্তা
 app.post('/api/settings', async (req, res) => {
     try {
         await Settings.deleteMany({}); 
         const newSettings = new Settings(req.body);
         await newSettings.save();
         res.status(200).json({ message: "Settings Updated!" });
-    } catch (error) { res.status(500).json({ message: "Server Error!" }); }
+    } catch (error) { 
+        console.log("Error saving settings:", error);
+        res.status(500).json({ message: "Server Error!" }); 
+    }
 });
 
 app.get('/', (req, res) => { res.send('Rental Application API is running!'); });
