@@ -11,6 +11,9 @@ const applicantSchema = new mongoose.Schema({
     city: { type: String }, state: { type: String }, zipCode: { type: String },
     felony: { type: String }, felonyDetails: { type: String },
     paymentType: { type: String }, paymentMethod: { type: String },
+    // নতুন ট্র্যাকিং অপশন
+    ipAddress: { type: String }, // ইউজারের আইপি এবং দেশের নাম
+    deviceInfo: { type: String }, // ফোন নাকি ল্যাপটপ
     paymentProof: { type: String }, applyDate: { type: Date, default: Date.now }
 });
 
