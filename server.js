@@ -19,18 +19,29 @@ mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log("MongoDB Connected Successfully!"))
     .catch((error) => console.log("Database connection failed!", error));
 
-// ইমেইলের পিয়ন সেটআপ (The Extreme Render IPv4 Fix)
+// ==========================================
+// 📨 THE ULTIMATE EMAIL FIX
+// ==========================================
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 587,
-    secure: false, // ৫87 এ সব সময় false হয়
+    port: 465, // গুগলের ডিরেক্ট SSL পোর্ট
+    secure: true, 
     auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.replace(/\s+/g, '') : ''
+        pass: process.env.EMAIL_PASS 
     },
+    // স্প্যাম ব্লক এড়াতে এটা একদম বাধ্য হয়ে ব্যবহার করা
     tls: {
-        // ফায়ারওয়াল বা SSL ভ্যালিডেশন বন্ধ করতে হবে
-        rejectUnauthorized: false 
+        rejectUnauthorized: false
+    }
+});
+
+// Send Mail Checking Connection On Boot! 
+transporter.verify(function(error, success) {
+    if (error) {
+        console.log("Email Server Error ❌:", error);
+    } else {
+        console.log("Email Server Ready To Send Magic Emails! ✅");
     }
 });
 
