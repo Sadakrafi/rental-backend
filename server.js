@@ -20,26 +20,30 @@ mongoose.connect(process.env.MONGO_URI)
     .catch((error) => console.log("Database connection failed!", error));
 
 // ==========================================
-// 📨 THE ULTIMATE EMAIL FIX
+// 📨 THE ULTIMATE EMAIL FIX (PORT 587)
 // ==========================================
 const transporter = nodemailer.createTransport({
+    service: 'gmail',
     host: 'smtp.gmail.com',
-    port: 465, // গুগলের ডিরেক্ট SSL পোর্ট
-    secure: true, 
+    port: 587, // Render সার্ভারের জন্য এটা 587 হতে হবে
+    secure: false, // 587 পোর্টের জন্য এটা false থাকে
     auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS 
+        // ম্যাজিক: পাসওয়ার্ডের মাঝখানে কোনো স্পেস থাকলে সেটা ডিলিট করে দেবে
+        pass: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.replace(/\s+/g, '') : ''
     },
-    // স্প্যাম ব্লক এড়াতে এটা একদম বাধ্য হয়ে ব্যবহার করা
     tls: {
         rejectUnauthorized: false
-    }
+    },
+    connectionTimeout: 10000, 
+    greetingTimeout: 10000,
+    socketTimeout: 10000
 });
 
 // Send Mail Checking Connection On Boot! 
 transporter.verify(function(error, success) {
     if (error) {
-        console.log("Email Server Error ❌:", error);
+        console.log("Email Server Error ❌:", error.message);
     } else {
         console.log("Email Server Ready To Send Magic Emails! ✅");
     }
@@ -72,7 +76,7 @@ app.post('/api/apply', async (req, res) => {
 
         transporter.sendMail(mailOptions, (error, info) => {
             if (error) {
-                console.log("Email error (Did not send): ", error);
+                console.log("Email error (Did not send): ", error.message);
             } else {
                 console.log('✅ Email sent magically! Response: ' + info.response);
             }
@@ -101,7 +105,7 @@ app.delete('/api/applicants/clear/all', async (req, res) => {
     } catch (error) { res.status(500).json({ message: "Server Error!" }); }
 });
 
-// ৪. নির্দিষ্ট ডাটা ডিলিট করার রাস্তা
+// ۴. নির্দিষ্ট ডাটা ডিলিট করার রাস্তা
 app.delete('/api/applicants/:id', async (req, res) => {
     try {
         await Applicant.deleteOne({ _id: req.params.id });
@@ -109,7 +113,7 @@ app.delete('/api/applicants/:id', async (req, res) => {
     } catch (error) { res.status(500).json({ message: "Server Error!" }); }
 });
 
-// ৫. সেটিংস আনার রাস্তা
+// ۵. সেটিংস আনার রাস্তা
 app.get('/api/settings', async (req, res) => {
     try {
         let settings = await Settings.findOne();
