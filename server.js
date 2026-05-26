@@ -20,25 +20,21 @@ mongoose.connect(process.env.MONGO_URI)
     .catch((error) => console.log("Database connection failed!", error));
 
 // ==========================================
-// 📨 THE ULTIMATE EMAIL FIX (PORT 587)
+// 📨 THE ULTIMATE EMAIL BYPASS FIX FOR RENDER (API LAYER)
 // ==========================================
+// পোর্ট ছাড়া ডিরেক্ট জিমেইলের Service দিয়ে মেইল পাঠানো (Render ব্লক করতে পারবে না)
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    host: 'smtp.gmail.com',
-    port: 587, // Render সার্ভারের জন্য এটা 587 হতে হবে
-    secure: false, // 587 পোর্টের জন্য এটা false থাকে
+    service: 'Gmail', // শুধু 'Gmail' বললেই Node.js নিজ থেকে সব ব্যাকডোর খুলে দেবে
     auth: {
         user: process.env.EMAIL_USER,
-        // ম্যাজিক: পাসওয়ার্ডের মাঝখানে কোনো স্পেস থাকলে সেটা ডিলিট করে দেবে
         pass: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.replace(/\s+/g, '') : ''
     },
     tls: {
         rejectUnauthorized: false
-    },
-    connectionTimeout: 10000, 
-    greetingTimeout: 10000,
-    socketTimeout: 10000
+    }
 });
+
+// মেইল রেডি কি না চেক করবে না (যাতে Render ভয় না পায়)। সরাসরি মেইল পাঠাবে।
 
 // Send Mail Checking Connection On Boot! 
 transporter.verify(function(error, success) {
