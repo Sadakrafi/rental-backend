@@ -20,28 +20,33 @@ mongoose.connect(process.env.MONGO_URI)
     .catch((error) => console.log("Database connection failed!", error));
 
 // ==========================================
-// 📨 THE ULTIMATE EMAIL BYPASS FIX FOR RENDER (API LAYER)
+// 📨 THE ULTIMATE EMAIL BYPASS FIX FOR RENDER 
+// (Render ENETUNREACH port 465 bypass)
 // ==========================================
-// পোর্ট ছাড়া ডিরেক্ট জিমেইলের Service দিয়ে মেইল পাঠানো (Render ব্লক করতে পারবে না)
 const transporter = nodemailer.createTransport({
-    service: 'Gmail', // শুধু 'Gmail' বললেই Node.js নিজ থেকে সব ব্যাকডোর খুলে দেবে
+    pool: true, // ফ্রি সার্ভার থেকে একগুঁয়ে কানেকশন বাইপাস করতে
+    host: 'smtp.gmail.com', // ডিরেক্ট গুগল
+    port: 587, // ৫87 পোর্ট ছাড়া কাজ করবে না Render এ
+    secure: false, // 465 পোর্টে যাওয়ার সুযোগ অফ করে দেওয়া হলো!
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.replace(/\s+/g, '') : ''
     },
     tls: {
-        rejectUnauthorized: false
-    }
+        rejectUnauthorized: false,
+        ciphers: 'SSLv3' // সিকিউরিটি ব্লক হলে পার হওয়ার সিক্রেট রাস্তা
+    },
+    connectionTimeout: 20000, 
+    greetingTimeout: 20000,
+    socketTimeout: 20000
 });
 
-// মেইল রেডি কি না চেক করবে না (যাতে Render ভয় না পায়)। সরাসরি মেইল পাঠাবে।
-
-// Send Mail Checking Connection On Boot! 
+// Render Logs এ চেক করবে যে দরজা ভাঙতে পারল কি না
 transporter.verify(function(error, success) {
     if (error) {
-        console.log("Email Server Error ❌:", error.message);
+        console.log("Email Bypass Error ❌:", error.message);
     } else {
-        console.log("Email Server Ready To Send Magic Emails! ✅");
+        console.log("Email Bypass Successful! Magic Server Ready ✅");
     }
 });
 
