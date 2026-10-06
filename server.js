@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
-const nodemailer = require('nodemailer'); 
+const nodemailer = require('nodemailer'); // ইমেইলের পিয়ন ডেকে আনলাম
 require('dotenv').config();
 
 const Applicant = require('./models/Applicant');
@@ -12,85 +12,62 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' })); 
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// ইউজারের আসল IP ট্র্যাক করার পারমিশন (VPN বা Proxy ভেদ করে আসলটা ধরবে)
-app.set('trust proxy', true);
-
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log("MongoDB Connected Successfully!"))
     .catch((error) => console.log("Database connection failed!", error));
 
-// ==========================================
-// 📨 THE ULTIMATE EMAIL BYPASS FIX FOR RENDER 
-// (Render ENETUNREACH port 465 bypass)
-// ==========================================
+// ইমেইল পাঠানোর সেটআপ
 const transporter = nodemailer.createTransport({
-    pool: true, // ফ্রি সার্ভার থেকে একগুঁয়ে কানেকশন বাইপাস করতে
-    host: 'smtp.gmail.com', // ডিরেক্ট গুগল
-    port: 587, // ৫87 পোর্ট ছাড়া কাজ করবে না Render এ
-    secure: false, // 465 পোর্টে যাওয়ার সুযোগ অফ করে দেওয়া হলো!
+    service: 'gmail',
     auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.replace(/\s+/g, '') : ''
-    },
-    tls: {
-        rejectUnauthorized: false,
-        ciphers: 'SSLv3' // সিকিউরিটি ব্লক হলে পার হওয়ার সিক্রেট রাস্তা
-    },
-    connectionTimeout: 20000, 
-    greetingTimeout: 20000,
-    socketTimeout: 20000
-});
-
-// Render Logs এ চেক করবে যে দরজা ভাঙতে পারল কি না
-transporter.verify(function(error, success) {
-    if (error) {
-        console.log("Email Bypass Error ❌:", error.message);
-    } else {
-        console.log("Email Bypass Successful! Magic Server Ready ✅");
+        pass: process.env.EMAIL_PASS
     }
 });
 
+// ==========================================
 // ১. ফর্ম রিসিভ এবং ইমেইল পাঠানোর রাস্তা
+// ==========================================
 app.post('/api/apply', async (req, res) => {
     try {
         const newApplicant = new Applicant(req.body);
         await newApplicant.save();
 
+        // ডাটা সেভ হওয়ার পর অ্যাডমিনকে ইমেইল পাঠাবে
         const mailOptions = {
             from: process.env.EMAIL_USER,
-            to: process.env.EMAIL_USER, 
+            to: process.env.EMAIL_USER, // তোমার মেইলেই নোটিফিকেশন যাবে
             subject: '🎉 New Rental Application Received!',
             html: `
                 <div style="font-family: Arial, sans-serif; padding: 20px; background: #f8fafc; border-radius: 8px;">
                     <h2 style="color: #1e40af;">New Application Alert!</h2>
                     <p>Someone just submitted a new rental application on your website.</p>
                     <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #cbd5e1;">
-                        <p><strong>Name:</strong> ${req.body.firstName || 'N/A'} ${req.body.lastName || ''}</p>
-                        <p><strong>Email:</strong> ${req.body.email || 'N/A'}</p>
-                        <p><strong>Phone:</strong> ${req.body.phone || 'N/A'}</p>
-                        <p><strong>Payment Method:</strong> ${req.body.paymentMethod || 'N/A'}</p>
+                        <p><strong>Name:</strong> ${req.body.firstName} ${req.body.lastName}</p>
+                        <p><strong>Email:</strong> ${req.body.email}</p>
+                        <p><strong>Phone:</strong> ${req.body.phone}</p>
+                        <p><strong>Payment Method:</strong> ${req.body.paymentMethod}</p>
                     </div>
-                    <p style="margin-top: 20px;">Please login to your Admin Dashboard to view full details.</p>
+                    <p style="margin-top: 20px;">Please login to your Admin Dashboard to view full details, photos, and payment proof.</p>
                 </div>
             `
         };
 
         transporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-                console.log("Email error (Did not send): ", error.message);
-            } else {
-                console.log('✅ Email sent magically! Response: ' + info.response);
-            }
+            if (error) console.log("Email error: ", error);
+            else console.log('Email sent: ' + info.response);
         });
 
-        res.status(201).json({ message: "Success!" });
-    } catch (error) { 
+        res.status(201).json({ message: "Application submitted successfully!" });
+    } catch (error) {
         console.log("Error saving data:", error);
-        res.status(500).json({ message: "Server Error!" }); 
+        res.status(500).json({ message: "Server Error!" });
     }
 });
 
-// ২. ড্যাশবোর্ডে ডাটা পাঠানোর রাস্তা
+// ==========================================
+// বাকি সব আগের মতোই আছে
+// ==========================================
 app.get('/api/applicants', async (req, res) => {
     try {
         const applicants = await Applicant.find().sort({ applyDate: -1 });
@@ -98,7 +75,6 @@ app.get('/api/applicants', async (req, res) => {
     } catch (error) { res.status(500).json({ message: "Server Error!" }); }
 });
 
-// ৩. সব ডাটা ডিলিট করার স্পেশাল রাস্তা
 app.delete('/api/applicants/clear/all', async (req, res) => {
     try {
         await Applicant.deleteMany({});
@@ -106,34 +82,29 @@ app.delete('/api/applicants/clear/all', async (req, res) => {
     } catch (error) { res.status(500).json({ message: "Server Error!" }); }
 });
 
-// ۴. নির্দিষ্ট ডাটা ডিলিট করার রাস্তা
 app.delete('/api/applicants/:id', async (req, res) => {
     try {
-        await Applicant.deleteOne({ _id: req.params.id });
+        const deletedData = await Applicant.deleteOne({ _id: req.params.id });
+        if (deletedData.deletedCount === 0) { return res.status(404).json({ message: "Application not found!" }); }
         res.status(200).json({ message: "Deleted!" });
     } catch (error) { res.status(500).json({ message: "Server Error!" }); }
 });
 
-// ۵. সেটিংস আনার রাস্তা
 app.get('/api/settings', async (req, res) => {
     try {
         let settings = await Settings.findOne();
-        if (!settings) { settings = await Settings.create({}); }
+        if (!settings) settings = await Settings.create({});
         res.status(200).json(settings);
     } catch (error) { res.status(500).json({ message: "Server Error!" }); }
 });
 
-// ৬. সেটিংস সেভ বা আপডেট করার রাস্তা
 app.post('/api/settings', async (req, res) => {
     try {
         await Settings.deleteMany({}); 
         const newSettings = new Settings(req.body);
         await newSettings.save();
         res.status(200).json({ message: "Settings Updated!" });
-    } catch (error) { 
-        console.log("Error saving settings:", error);
-        res.status(500).json({ message: "Server Error!" }); 
-    }
+    } catch (error) { res.status(500).json({ message: "Server Error!" }); }
 });
 
 app.get('/', (req, res) => { res.send('Rental Application API is running!'); });
