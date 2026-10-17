@@ -199,10 +199,13 @@ function writeLocalSettings(data) {
 app.get('/', async (req, res) => {
     let dbStatus = "disconnected";
     try {
+        await connectToDatabase();
         if (mongoose.connection && mongoose.connection.readyState === 1) {
             dbStatus = "connected";
         }
-    } catch (e) {}
+    } catch (e) {
+        dbStatus = "disconnected (" + e.message + ")";
+    }
 
     res.status(200).json({
         status: "ok",
@@ -213,7 +216,10 @@ app.get('/', async (req, res) => {
     });
 });
 
-app.get('/api/health', (req, res) => {
+app.get('/api/health', async (req, res) => {
+    try {
+        await connectToDatabase();
+    } catch (e) {}
     res.status(200).json({
         status: "ok",
         database: (mongoose.connection && mongoose.connection.readyState === 1) ? "connected" : "disconnected"
